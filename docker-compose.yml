@@ -1,0 +1,28 @@
+version: "2.4"
+services:
+  solution:
+      image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+      build:
+        context: .
+        args:
+          BASE_IMAGE: ${SOLUTION_BASE_IMAGE}
+          BUILD_IMAGE: ${SOLUTION_BUILD_IMAGE}
+          BUILD_CONFIGURATION: ${BUILD_CONFIGURATION}
+      scale: 0
+  cd:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xp1-cd:${VERSION:-latest}
+    build:
+      context: ./docker/build/cd
+      args:
+        BASE_IMAGE: ${SITECORE_DOCKER_REGISTRY}sitecore-xp1-cd:${SITECORE_VERSION}
+        SXA_IMAGE: ${SITECORE_MODULE_REGISTRY}sitecore-sxa-xp1-assets:${SXA_VERSION}
+        TOOLING_IMAGE: ${SITECORE_TOOLS_REGISTRY}sitecore-docker-tools-assets:${TOOLS_VERSION}
+        SOLUTION_IMAGE: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+    depends_on:
+      - solution
+    volumes:
+      - ${LOCAL_DEPLOY_PATH}/website:C:\deploy
+      - ${LOCAL_DATA_PATH}/cd:C:\inetpub\wwwroot\App_Data\logs
+    environment:
+      SITECORE_DEVELOPMENT_PATCHES: CustomErrorsOff
+    entrypoint: powershell -Command "& C:\tools\entrypoints\iis\Development.ps1"
